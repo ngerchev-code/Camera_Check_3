@@ -1,0 +1,709 @@
+<title>ОкоМрежа</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout concept: fixed app shell — status header, swappable full-bleed view, bottom tab bar; a schematic SVG map of Bulgaria as the home surface. */
+:root{
+  --bg:#f4f6f9; --panel:#ffffff; --panel2:#eef1f6; --inset:#e7ecf3;
+  --fg:#16202e; --muted:#5a6678; --faint:#8a95a6; --line:#dde3ec;
+  --accent:#0d9488; --accent-ink:#ffffff;
+  --live:#15a66b; --warn:#b4791a; --alert:#d84646;
+  --land:#dfe6ef; --land-line:#b7c2d1; --sea:#eef3f8;
+  --shadow:0 6px 22px rgba(20,36,60,.10);
+  --f-disp:"Exo 2",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1420; --panel:#161e2e; --panel2:#1b2436; --inset:#111a28;
+  --fg:#e6ecf5; --muted:#8a97ad; --faint:#64718a; --line:#263149;
+  --accent:#2dd4bf; --accent-ink:#06211d;
+  --live:#34d399; --warn:#fbbf24; --alert:#f87171;
+  --land:#1c273c; --land-line:#33436a; --sea:#0c1420;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1420; --panel:#161e2e; --panel2:#1b2436; --inset:#111a28;
+  --fg:#e6ecf5; --muted:#8a97ad; --faint:#64718a; --line:#263149;
+  --accent:#2dd4bf; --accent-ink:#06211d;
+  --live:#34d399; --warn:#fbbf24; --alert:#f87171;
+  --land:#1c273c; --land-line:#33436a; --sea:#0c1420;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);
+  -webkit-font-smoothing:antialiased;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column;max-width:720px;margin:0 auto;
+  position:relative;background:var(--bg)}
+
+/* ---------- header ---------- */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;
+  background:var(--panel);border-bottom:1px solid var(--line);
+  padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{width:34px;height:34px;flex:0 0 auto}
+.brand h1{font-family:var(--f-disp);font-weight:700;font-size:1.16rem;margin:0;
+  letter-spacing:.3px;line-height:1;white-space:nowrap}
+.brand .sub{font-size:.66rem;color:var(--faint);letter-spacing:1.4px;
+  text-transform:uppercase;margin-top:3px;font-family:var(--f-mono)}
+.hstat{margin-left:auto;display:flex;align-items:center;gap:7px;
+  font-family:var(--f-mono);font-size:.7rem;color:var(--muted);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--live);
+  box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}
+  70%{box-shadow:0 0 0 7px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+
+/* ---------- views ---------- */
+main{flex:1;min-height:0;position:relative}
+.view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch}
+.view[hidden]{display:none!important}
+.pad{padding-block:14px 90px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- map ---------- */
+#view-map{display:flex;flex-direction:column}
+.mapwrap{position:relative;flex:1;min-height:0;background:var(--sea);overflow:hidden;
+  touch-action:none}
+#map{width:100%;height:100%;display:block;cursor:grab}
+#map:active{cursor:grabbing}
+.mapctrl{position:absolute;right:max(12px,env(safe-area-inset-right,0px));
+  top:12px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.mapctrl button,.locbtn{width:40px;height:40px;border-radius:11px;border:1px solid var(--line);
+  background:var(--panel);color:var(--fg);font-size:1.2rem;cursor:pointer;
+  box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-disp);line-height:1}
+.locbtn{position:absolute;left:max(12px,env(safe-area-inset-left,0px));bottom:92px;
+  z-index:5;font-size:1.1rem}
+.mapctrl button:active,.locbtn:active{background:var(--panel2)}
+.legend{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:12px;z-index:5;
+  background:color-mix(in srgb,var(--panel) 90%,transparent);backdrop-filter:blur(6px);
+  border:1px solid var(--line);border-radius:12px;padding:8px 10px;box-shadow:var(--shadow);
+  font-size:.7rem;display:flex;flex-direction:column;gap:5px}
+.legend .row{display:flex;align-items:center;gap:7px;color:var(--muted)}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:0 0 auto}
+.filterbar{display:flex;gap:7px;overflow-x:auto;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--panel);border-bottom:1px solid var(--line);scrollbar-width:none}
+.filterbar::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--panel2);color:var(--muted);
+  border-radius:999px;padding:7px 13px;font-size:.78rem;cursor:pointer;white-space:nowrap;
+  font-weight:500;transition:all .15s}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);
+  border-color:var(--accent);font-weight:600}
+
+/* marker tooltip / sheet */
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:30;
+  background:var(--panel);border-top:1px solid var(--line);
+  border-radius:18px 18px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.2);
+  transform:translateY(110%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet.open{transform:translateY(0)}
+.sheet .grip{width:40px;height:4px;border-radius:2px;background:var(--line);
+  margin:9px auto 4px}
+.sheet .body{padding:4px 16px 18px}
+
+/* ---------- cards / cameras ---------- */
+.sectionhead{display:flex;align-items:baseline;gap:8px;margin:4px 0 12px}
+.sectionhead h2{font-family:var(--f-disp);font-weight:600;font-size:1.26rem;margin:0;
+  text-wrap:balance}
+.sectionhead .count{font-family:var(--f-mono);font-size:.74rem;color:var(--faint)}
+.search{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:9px 12px;margin-bottom:12px}
+.search input{border:0;background:transparent;color:var(--fg);font-family:var(--f-body);
+  font-size:.92rem;width:100%;outline:none}
+.search svg{flex:0 0 auto;color:var(--faint)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.cam{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  cursor:pointer;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.cam .thumb{position:relative;aspect-ratio:4/3;background:var(--inset);overflow:hidden}
+.cam .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.cam .ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:6px;color:var(--faint);
+  background:
+    repeating-linear-gradient(45deg,transparent,transparent 11px,
+      color-mix(in srgb,var(--faint) 8%,transparent) 11px,
+      color-mix(in srgb,var(--faint) 8%,transparent) 12px)}
+.cam .ph svg{opacity:.55}
+.cam .ph span{font-family:var(--f-mono);font-size:.62rem;letter-spacing:.5px}
+.livetag{position:absolute;top:7px;left:7px;background:color-mix(in srgb,var(--alert) 90%,#000);
+  color:#fff;font-family:var(--f-mono);font-size:.56rem;font-weight:500;
+  padding:2px 6px;border-radius:5px;letter-spacing:.6px;display:flex;align-items:center;gap:4px}
+.livetag i{width:5px;height:5px;border-radius:50%;background:#fff}
+.cam .meta{padding:8px 10px 10px;display:flex;flex-direction:column;gap:3px;flex:1}
+.cam .meta .nm{font-weight:600;font-size:.82rem;line-height:1.2}
+.cam .meta .pl{font-size:.68rem;color:var(--muted);display:flex;align-items:center;gap:4px}
+.cam .meta .co{font-family:var(--f-mono);font-size:.6rem;color:var(--faint);margin-top:auto;
+  font-variant-numeric:tabular-nums}
+.typepill{font-family:var(--f-mono);font-size:.56rem;text-transform:uppercase;letter-spacing:.5px;
+  padding:2px 6px;border-radius:5px;border:1px solid var(--line);color:var(--muted);align-self:flex-start}
+
+/* detail inside sheet */
+.detail{display:flex;flex-direction:column;gap:12px}
+.detail .big{aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:var(--inset);
+  position:relative}
+.detail .big img{width:100%;height:100%;object-fit:cover}
+.detail h3{font-family:var(--f-disp);font-weight:600;font-size:1.3rem;margin:0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.84rem}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-family:var(--f-mono);font-size:.8rem;font-variant-numeric:tabular-nums;
+  word-break:break-word}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btn{flex:1;min-width:120px;text-align:center;border:1px solid var(--accent);background:var(--accent);
+  color:var(--accent-ink);font-family:var(--f-body);font-weight:600;font-size:.88rem;
+  padding:11px 14px;border-radius:11px;cursor:pointer;text-decoration:none;display:inline-flex;
+  align-items:center;justify-content:center;gap:7px}
+.btn.ghost{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn:active{filter:brightness(.95)}
+
+/* ---------- assets ---------- */
+.asset{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 14px;
+  display:flex;gap:12px;align-items:center;box-shadow:var(--shadow);cursor:pointer}
+.asset .ic{width:44px;height:44px;border-radius:11px;flex:0 0 auto;display:flex;align-items:center;
+  justify-content:center;background:var(--panel2);color:var(--accent)}
+.asset .info{min-width:0;flex:1}
+.asset .info .nm{font-weight:600;font-size:.95rem;display:flex;align-items:center;gap:8px}
+.asset .info .pl{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);margin-top:2px;
+  font-variant-numeric:tabular-nums}
+.asset .st{font-family:var(--f-mono);font-size:.64rem;padding:3px 8px;border-radius:6px;
+  display:flex;align-items:center;gap:5px;white-space:nowrap}
+.asset .st i{width:6px;height:6px;border-radius:50%}
+.st.ok{background:color-mix(in srgb,var(--live) 16%,transparent);color:var(--live)}
+.st.ok i{background:var(--live)}
+.st.idle{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.st.idle i{background:var(--warn)}
+.list{display:flex;flex-direction:column;gap:11px}
+.addbtn{width:100%;border:1.5px dashed var(--line);background:transparent;color:var(--muted);
+  border-radius:14px;padding:14px;font-family:var(--f-body);font-size:.9rem;font-weight:500;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.addbtn:active{background:var(--panel2)}
+
+/* form */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:.76rem;color:var(--muted);font-weight:500}
+.field input,.field select{border:1px solid var(--line);background:var(--inset);color:var(--fg);
+  border-radius:10px;padding:11px 12px;font-family:var(--f-body);font-size:.92rem;outline:none}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* settings */
+.srow{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 14px;
+  display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.srow .t{flex:1;min-width:0}
+.srow .t .a{font-weight:600;font-size:.9rem}
+.srow .t .b{font-size:.76rem;color:var(--muted);margin-top:2px}
+.toggle{width:46px;height:27px;border-radius:999px;background:var(--line);position:relative;
+  cursor:pointer;flex:0 0 auto;transition:background .18s;border:0}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+  background:#fff;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle[aria-pressed="true"]{background:var(--accent)}
+.toggle[aria-pressed="true"]::after{left:22px}
+.note{font-size:.76rem;color:var(--muted);line-height:1.55;background:var(--panel2);
+  border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.note b{color:var(--fg);font-weight:600}
+.empty{text-align:center;color:var(--faint);padding:40px 20px;font-size:.88rem;line-height:1.6}
+
+/* ---------- bottom nav ---------- */
+nav{position:sticky;bottom:0;z-index:40;background:var(--panel);border-top:1px solid var(--line);
+  display:flex;padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-left:max(0px,env(safe-area-inset-left,0px));
+  padding-right:max(0px,env(safe-area-inset-right,0px))}
+nav button{flex:1;background:transparent;border:0;cursor:pointer;color:var(--faint);
+  padding:9px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-family:var(--f-body)}
+nav button .lb{font-size:.64rem;font-weight:500;letter-spacing:.2px}
+nav button svg{width:23px;height:23px}
+nav button[aria-current="true"]{color:var(--accent)}
+nav button:active{color:var(--fg)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.42);z-index:25;opacity:0;
+  pointer-events:none;transition:opacity .25s}
+.scrim.show{opacity:1;pointer-events:auto}
+</style>
+
+<div id="app">
+  <header>
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <rect x="2" y="2" width="44" height="44" rx="12" fill="var(--accent)"/>
+        <ellipse cx="24" cy="24" rx="15" ry="10" fill="none" stroke="var(--accent-ink)" stroke-width="2.4"/>
+        <circle cx="24" cy="24" r="5.4" fill="var(--accent-ink)"/>
+        <circle cx="24" cy="24" r="2.2" fill="var(--accent)"/>
+      </svg>
+      <div>
+        <h1>ОкоМрежа</h1>
+        <div class="sub">мрежа · камери · gps</div>
+      </div>
+    </div>
+    <div class="hstat"><span class="dot"></span><span id="hstat">—</span></div>
+  </header>
+
+  <main>
+    <!-- MAP -->
+    <section class="view" id="view-map">
+      <div class="filterbar" id="mapfilters"></div>
+      <div class="mapwrap">
+        <svg id="map" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet" aria-label="Карта на България"></svg>
+        <div class="legend">
+          <div class="row"><i style="background:var(--accent)"></i>Камера</div>
+          <div class="row"><i style="background:var(--warn)"></i>Техника</div>
+          <div class="row"><i style="background:var(--alert)"></i>Моята позиция</div>
+        </div>
+        <div class="mapctrl">
+          <button id="zin" aria-label="Приближи">+</button>
+          <button id="zout" aria-label="Отдалечи">−</button>
+          <button id="zreset" aria-label="Центрирай" style="font-size:.9rem">⌖</button>
+        </div>
+        <button class="locbtn" id="locate" aria-label="Моята позиция">◉</button>
+      </div>
+    </section>
+
+    <!-- CAMERAS -->
+    <section class="view" id="view-cams" hidden>
+      <div class="pad">
+        <div class="sectionhead"><h2>Публични камери</h2><span class="count" id="camcount"></span></div>
+        <div class="search">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="camsearch" placeholder="Търси по име или град…" autocomplete="off">
+        </div>
+        <div class="filterbar" id="camfilters" style="background:transparent;border:0;padding-left:0;padding-right:0;margin-bottom:12px"></div>
+        <div class="cards" id="camgrid"></div>
+      </div>
+    </section>
+
+    <!-- ASSETS -->
+    <section class="view" id="view-assets" hidden>
+      <div class="pad">
+        <div class="sectionhead"><h2>Моята техника</h2><span class="count" id="assetcount"></span></div>
+        <div class="list" id="assetlist"></div>
+        <button class="addbtn" id="addasset" style="margin-top:12px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Добави обект / тракер
+        </button>
+        <p class="note" style="margin-top:14px">GPS позицията на телефона и реалните тракери работят в инсталираното приложение. Тук можеш да въвеждаш и последна известна локация ръчно.</p>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-set" hidden>
+      <div class="pad">
+        <div class="sectionhead"><h2>Настройки</h2></div>
+        <div class="srow">
+          <div class="t"><div class="a">Тъмна тема</div><div class="b">Следва системата по подразбиране</div></div>
+          <button class="toggle" id="themeToggle" role="switch" aria-pressed="false" aria-label="Тъмна тема"></button>
+        </div>
+        <div class="srow">
+          <div class="t"><div class="a">Опресняване на камерите</div><div class="b">Жив кадър на всеки 20 сек.</div></div>
+          <button class="toggle" id="refreshToggle" role="switch" aria-pressed="true" aria-label="Опресняване"></button>
+        </div>
+        <button class="addbtn" id="addcam" style="margin:2px 0 14px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Добави собствена камера (HTTP/MJPEG поток)
+        </button>
+        <div class="note">
+          <b>Източници и законност.</b> Приложението показва само <b>официални публични</b> камери — метео, курортни и градски потоци, предназначени за свободно гледане. Не търси и не отваря чужди охранителни камери. Собствените си камери добавяш сам, с техен HTTP/MJPEG адрес.
+        </div>
+        <div class="note" style="margin-top:10px">
+          <b>ОкоМрежа</b> · версия 1.0 · Северна България — Комунално-строителна техника.
+        </div>
+        <button class="btn ghost" id="wipe" style="margin-top:14px;flex:none;width:100%">Изчисти запазените данни</button>
+      </div>
+    </section>
+
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" id="sheet">
+      <div class="grip"></div>
+      <div class="body" id="sheetbody"></div>
+    </div>
+  </main>
+
+  <nav>
+    <button data-nav="map" aria-current="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3Z"/><path d="M9 3v15M15 6v15"/></svg><span class="lb">Карта</span></button>
+    <button data-nav="cams"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M2 7h13l2-3h5v15a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z"/><circle cx="11" cy="13" r="3.4"/></svg><span class="lb">Камери</span></button>
+    <button data-nav="assets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg><span class="lb">Техника</span></button>
+    <button data-nav="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13a7.9 7.9 0 0 0 0-2l2-1.5-2-3.4-2.3 1a7.9 7.9 0 0 0-1.7-1l-.3-2.5H9.9l-.3 2.5a7.9 7.9 0 0 0-1.7 1l-2.3-1-2 3.4L5.6 11a7.9 7.9 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7.9 7.9 0 0 0 1.7 1l.3 2.5h4.2l.3-2.5a7.9 7.9 0 0 0 1.7-1l2.3 1 2-3.4Z"/></svg><span class="lb">Настройки</span></button>
+  </nav>
+</div>
+
+<script>
+"use strict";
+/* ---------------- data ---------------- */
+// Projection bbox for Bulgaria
+const BBOX={lonMin:22.30,lonMax:28.65,latMin:41.18,latMax:44.22};
+const VB={w:1000,h:640,pad:34};
+function project(lon,lat){
+  const x=VB.pad+(lon-BBOX.lonMin)/(BBOX.lonMax-BBOX.lonMin)*(VB.w-2*VB.pad);
+  const y=VB.pad+(BBOX.latMax-lat)/(BBOX.latMax-BBOX.latMin)*(VB.h-2*VB.pad);
+  return [x,y];
+}
+// Coarse schematic outline of Bulgaria (lon,lat), clockwise
+const OUTLINE=[[22.37,44.18],[22.95,43.82],[23.62,43.79],[24.5,43.76],[25.6,43.68],
+[26.22,43.74],[27.0,44.13],[27.72,44.02],[28.02,43.74],[27.9,43.38],[28.05,43.18],
+[27.9,42.69],[27.5,42.42],[27.82,42.02],[28.02,41.98],[27.3,41.9],[26.6,41.35],
+[26.1,41.33],[25.5,41.3],[24.8,41.4],[24.1,41.46],[23.6,41.38],[23.3,41.48],
+[22.92,41.33],[22.98,41.63],[22.9,42.02],[22.45,42.32],[22.55,42.9],[22.42,43.2],
+[22.7,43.5],[22.37,43.82]];
+const CITIES=[["София",23.32,42.70],["Пловдив",24.75,42.14],["Варна",27.92,43.21],
+["Бургас",27.47,42.50],["Русе",25.95,43.84],["В. Търново",25.63,43.08],
+["Плевен",24.62,43.42],["Стара Загора",25.63,42.43]];
+
+// Public, free-to-view webcams across Bulgaria. page=official link; img=direct still (best-effort, falls back).
+const CAMS=[
+ {id:"bansko",nm:"Банско — Тодорка",pl:"Банско",ty:"ski",lon:23.46,lat:41.78,prov:"bansko.bg",page:"https://www.bansko.bg/bg/web-cameras"},
+ {id:"pamporovo",nm:"Пампорово — Снежанка",pl:"Пампорово",ty:"ski",lon:24.68,lat:41.66,prov:"pamporovo.net",page:"https://pamporovo.me/webcams/"},
+ {id:"borovets",nm:"Боровец — Ястребец",pl:"Боровец",ty:"ski",lon:23.60,lat:42.27,prov:"borovets-bg.com",page:"https://www.borovets-bg.com/webcam/"},
+ {id:"vitosha",nm:"Витоша — Алеко",pl:"София",ty:"mtn",lon:23.28,lat:42.59,prov:"vitoshaski.com",page:"https://www.vitoshaski.com/"},
+ {id:"malyovitsa",nm:"х. Мальовица",pl:"Рила",ty:"mtn",lon:23.38,lat:42.18,prov:"befsa.com",page:"https://www.befsa.com/"},
+ {id:"rozhen",nm:"НАО Рожен",pl:"Родопи",ty:"mtn",lon:24.74,lat:41.69,prov:"nao-rozhen.org",page:"https://www.nao-rozhen.org/"},
+ {id:"belmeken",nm:"яз. Белмекен",pl:"Рила",ty:"mtn",lon:23.78,lat:42.21,prov:"meteo",page:"https://www.windy.com/42.21/23.78"},
+ {id:"sofiacenter",nm:"София — център",pl:"София",ty:"city",lon:23.32,lat:42.695,prov:"vratsa live/webcam",page:"https://www.webcam.bg/"},
+ {id:"vtarnovo",nm:"В. Търново — Царевец",pl:"Велико Търново",ty:"city",lon:25.655,lat:43.082,prov:"livecam",page:"https://www.webcam.bg/"},
+ {id:"plovdiv",nm:"Пловдив — Главната",pl:"Пловдив",ty:"city",lon:24.748,lat:42.146,prov:"livecam",page:"https://www.webcam.bg/"},
+ {id:"ruse",nm:"Русе — Дунав мост",pl:"Русе",ty:"city",lon:25.95,lat:43.845,prov:"livecam",page:"https://www.webcam.bg/"},
+ {id:"vratsa",nm:"Враца — център",pl:"Враца",ty:"city",lon:23.552,lat:43.21,prov:"livecam",page:"https://www.webcam.bg/"},
+ {id:"varna",nm:"Варна — Морска градина",pl:"Варна",ty:"sea",lon:27.95,lat:43.20,prov:"livecam",page:"https://www.webcam.bg/"},
+ {id:"zlatni",nm:"Златни пясъци",pl:"Варна",ty:"sea",lon:28.04,lat:43.285,prov:"livecam",page:"https://www.webcam.bg/"},
+ {id:"slanchev",nm:"Слънчев бряг",pl:"Несебър",ty:"sea",lon:27.71,lat:42.69,prov:"livecam",page:"https://www.webcam.bg/"},
+ {id:"nesebar",nm:"Несебър — стар град",pl:"Несебър",ty:"sea",lon:27.73,lat:42.66,prov:"livecam",page:"https://www.webcam.bg/"},
+ {id:"sozopol",nm:"Созопол — пристанище",pl:"Созопол",ty:"sea",lon:27.70,lat:42.42,prov:"livecam",page:"https://www.webcam.bg/"},
+ {id:"burgas",nm:"Бургас — мост",pl:"Бургас",ty:"sea",lon:27.47,lat:42.49,prov:"livecam",page:"https://www.webcam.bg/"},
+ {id:"chepelare",nm:"Чепеларе — Мечи чал",pl:"Чепеларе",ty:"ski",lon:24.68,lat:41.72,prov:"mechichal.com",page:"https://www.mechichal.com/"},
+ {id:"dragalevtsi",nm:"Драгалевци — лифт",pl:"София",ty:"mtn",lon:23.31,lat:42.63,prov:"meteo",page:"https://www.windy.com/42.63/23.31"}
+];
+const TYPES={all:"Всички",ski:"Ски",mtn:"Планина",city:"Град",sea:"Море"};
+const TYPE_COLORS={ski:"#38bdf8",mtn:"#34d399",city:"#a78bfa",sea:"#22d3ee"};
+
+/* ---------------- state ---------------- */
+const LS={assets:"oko_assets",theme:"oko_theme",refresh:"oko_refresh",cams:"oko_customcams"};
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+let state={
+  mapFilter:"all", camFilter:"all", camQuery:"",
+  assets: lsGet(LS.assets, [
+    {id:"car1",nm:"Дачия Логан",ty:"car",plate:"CB9322XM",lon:25.63,lat:43.08,ts:Date.now()-1000*60*18,demo:true},
+    {id:"m1",nm:"Багер Hidromek HMK 102B",ty:"excavator",plate:"обект Русе",lon:25.97,lat:43.85,ts:Date.now()-1000*60*60*3,demo:true}
+  ]),
+  customCams: lsGet(LS.cams, []),
+  me:null, refresh: lsGet(LS.refresh,true)
+};
+function allCams(){return CAMS.concat(state.customCams);}
+
+/* ---------------- map render ---------------- */
+const svg=document.getElementById("map");
+const SVGNS="http://www.w3.org/2000/svg";
+let tf={x:0,y:0,k:1};
+function el(n,a){const e=document.createElementNS(SVGNS,n);for(const k in a)e.setAttribute(k,a[k]);return e;}
+let gRoot;
+function drawMap(){
+  svg.innerHTML="";
+  // sea bg
+  svg.appendChild(el("rect",{x:0,y:0,width:VB.w,height:VB.h,fill:"var(--sea)"}));
+  gRoot=el("g",{});
+  svg.appendChild(gRoot);
+  // graticule subtle
+  for(let lon=22;lon<=29;lon++){const[a]=project(lon,44.3);const[,b1]=project(lon,44.3);const p1=project(lon,41.1);
+    gRoot.appendChild(el("line",{x1:a,y1:project(lon,44.3)[1],x2:p1[0],y2:p1[1],stroke:"var(--land-line)","stroke-width":.5,opacity:.25}));}
+  for(let lat=41;lat<=44;lat++){const p0=project(22.2,lat),p1=project(28.7,lat);
+    gRoot.appendChild(el("line",{x1:p0[0],y1:p0[1],x2:p1[0],y2:p1[1],stroke:"var(--land-line)","stroke-width":.5,opacity:.25}));}
+  // land polygon
+  const pts=OUTLINE.map(p=>project(p[0],p[1]).join(",")).join(" ");
+  gRoot.appendChild(el("polygon",{points:pts,fill:"var(--land)",stroke:"var(--land-line)","stroke-width":1.6,
+    "stroke-linejoin":"round"}));
+  // cities
+  CITIES.forEach(c=>{const[x,y]=project(c[1],c[2]);
+    gRoot.appendChild(el("circle",{cx:x,cy:y,r:2.6,fill:"var(--faint)"}));
+    const t=el("text",{x:x+6,y:y+3.5,fill:"var(--faint)","font-size":12,"font-family":"var(--f-body)"});
+    t.textContent=c[0];gRoot.appendChild(t);});
+  // asset markers
+  state.assets.forEach(a=>{const[x,y]=project(a.lon,a.lat);
+    const g=el("g",{class:"mk",style:"cursor:pointer"});
+    g.appendChild(el("circle",{cx:x,cy:y,r:9,fill:"var(--warn)",opacity:.18}));
+    g.appendChild(el("circle",{cx:x,cy:y,r:5,fill:"var(--warn)",stroke:"var(--panel)","stroke-width":1.5}));
+    g.addEventListener("click",ev=>{ev.stopPropagation();openAsset(a.id);});
+    gRoot.appendChild(g);});
+  // camera markers
+  allCams().forEach(c=>{if(state.mapFilter!=="all"&&c.ty!==state.mapFilter)return;
+    const[x,y]=project(c.lon,c.lat);
+    const g=el("g",{class:"mk",style:"cursor:pointer"});
+    g.appendChild(el("circle",{cx:x,cy:y,r:7,fill:"var(--accent)",opacity:.16}));
+    g.appendChild(el("circle",{cx:x,cy:y,r:4.2,fill:"var(--accent)",stroke:"var(--panel)","stroke-width":1.3}));
+    g.addEventListener("click",ev=>{ev.stopPropagation();openCam(c.id);});
+    gRoot.appendChild(g);});
+  // me
+  if(state.me){const[x,y]=project(state.me.lon,state.me.lat);
+    gRoot.appendChild(el("circle",{cx:x,cy:y,r:13,fill:"var(--alert)",opacity:.15}));
+    gRoot.appendChild(el("circle",{cx:x,cy:y,r:5.5,fill:"var(--alert)",stroke:"#fff","stroke-width":2}));}
+  applyTf();
+}
+function applyTf(){gRoot.setAttribute("transform",`translate(${tf.x} ${tf.y}) scale(${tf.k})`);}
+// pan/zoom
+let drag=null;
+svg.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY,ox:tf.x,oy:tf.y};svg.setPointerCapture(e.pointerId);});
+svg.addEventListener("pointermove",e=>{if(!drag)return;const r=svg.getBoundingClientRect();const sc=VB.w/r.width;
+  tf.x=drag.ox+(e.clientX-drag.x)*sc;tf.y=drag.oy+(e.clientY-drag.y)*sc;applyTf();});
+svg.addEventListener("pointerup",e=>{drag=null;});
+svg.addEventListener("pointercancel",e=>{drag=null;});
+function zoomAt(factor){const cx=VB.w/2,cy=VB.h/2;
+  const nx=cx-(cx-tf.x)*factor, ny=cy-(cy-tf.y)*factor;
+  tf.k=Math.min(6,Math.max(1,tf.k*factor));tf.x=nx;tf.y=ny;clampTf();applyTf();}
+function clampTf(){const maxX=0,minX=VB.w-VB.w*tf.k;const maxY=0,minY=VB.h-VB.h*tf.k;
+  tf.x=Math.min(maxX,Math.max(minX,tf.x));tf.y=Math.min(maxY,Math.max(minY,tf.y));}
+document.getElementById("zin").onclick=()=>zoomAt(1.35);
+document.getElementById("zout").onclick=()=>zoomAt(1/1.35);
+document.getElementById("zreset").onclick=()=>{tf={x:0,y:0,k:1};applyTf();};
+svg.addEventListener("wheel",e=>{e.preventDefault();zoomAt(e.deltaY<0?1.12:1/1.12);},{passive:false});
+svg.addEventListener("click",()=>closeSheet());
+
+/* ---------------- filters ---------------- */
+function buildFilters(){
+  const mf=document.getElementById("mapfilters"), cf=document.getElementById("camfilters");
+  mf.innerHTML="";cf.innerHTML="";
+  Object.entries(TYPES).forEach(([k,v])=>{
+    const b=document.createElement("button");b.className="chip";b.textContent=v;
+    b.setAttribute("aria-pressed",state.mapFilter===k);
+    b.onclick=()=>{state.mapFilter=k;buildFilters();drawMap();};
+    mf.appendChild(b);
+    const b2=document.createElement("button");b2.className="chip";b2.textContent=v;
+    b2.setAttribute("aria-pressed",state.camFilter===k);
+    b2.onclick=()=>{state.camFilter=k;buildFilters();renderCams();};
+    cf.appendChild(b2);
+  });
+}
+
+/* ---------------- cameras view ---------------- */
+function camImgTag(c,cls){
+  // Try the real stream in the installed app; gracefully fall back to a styled placeholder.
+  const src=c.img||"";
+  const ph=`<div class="ph"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 7h13l2-3h5v15a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z"/><circle cx="11" cy="13" r="3.4"/></svg><span>ПУБЛИЧЕН ПОТОК</span></div>`;
+  if(!src) return ph;
+  return `<img src="${src}" alt="${c.nm}" referrerpolicy="no-referrer" onerror="this.outerHTML='${ph.replace(/'/g,"\\'")}'">`+"";
+}
+function renderCams(){
+  const grid=document.getElementById("camgrid");
+  const q=state.camQuery.trim().toLowerCase();
+  let list=allCams().filter(c=>{
+    if(state.camFilter!=="all"&&c.ty!==state.camFilter)return false;
+    if(q&&!(c.nm.toLowerCase().includes(q)||c.pl.toLowerCase().includes(q)))return false;
+    return true;});
+  document.getElementById("camcount").textContent=list.length+" камери";
+  if(!list.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1">Няма камери по този филтър.</div>`;return;}
+  grid.innerHTML=list.map(c=>`
+    <div class="cam" data-cam="${c.id}">
+      <div class="thumb">${camImgTag(c)}<div class="livetag"><i></i>LIVE</div></div>
+      <div class="meta">
+        <span class="typepill">${TYPES[c.ty]||c.ty}</span>
+        <div class="nm">${c.nm}</div>
+        <div class="pl">📍 ${c.pl}</div>
+        <div class="co">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}</div>
+      </div>
+    </div>`).join("");
+  grid.querySelectorAll(".cam").forEach(x=>x.onclick=()=>openCam(x.dataset.cam));
+}
+document.getElementById("camsearch").addEventListener("input",e=>{state.camQuery=e.target.value;renderCams();});
+
+/* ---------------- sheet ---------------- */
+const sheet=document.getElementById("sheet"),scrim=document.getElementById("scrim"),
+  sheetBody=document.getElementById("sheetbody");
+function openSheet(html){sheetBody.innerHTML=html;sheet.classList.add("open");scrim.classList.add("show");}
+function closeSheet(){sheet.classList.remove("open");scrim.classList.remove("show");}
+scrim.onclick=closeSheet;
+
+function openCam(id){
+  const c=allCams().find(x=>x.id===id);if(!c)return;
+  openSheet(`<div class="detail">
+    <div class="big">${camImgTag(c)}<div class="livetag" style="top:10px;left:10px"><i></i>LIVE</div></div>
+    <div>
+      <span class="typepill">${TYPES[c.ty]||c.ty}</span>
+      <h3 style="margin-top:6px">${c.nm}</h3>
+    </div>
+    <dl class="kv">
+      <dt>Местоположение</dt><dd>${c.pl}</dd>
+      <dt>Координати</dt><dd>${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}</dd>
+      <dt>Източник</dt><dd>${c.prov}</dd>
+      <dt>Тип</dt><dd>${TYPES[c.ty]||c.ty}</dd>
+    </dl>
+    <div class="btnrow">
+      <a class="btn" href="${c.page}" target="_blank" rel="noopener">Отвори потока ↗</a>
+      <button class="btn ghost" onclick="showOnMap(${c.lon},${c.lat})">Покажи на картата</button>
+    </div>
+  </div>`);
+}
+function showOnMap(lon,lat){closeSheet();go("map");
+  const[x,y]=project(lon,lat);tf.k=3.4;tf.x=VB.w/2-x*tf.k;tf.y=VB.h/2-y*tf.k;clampTf();applyTf();}
+window.showOnMap=showOnMap;
+
+/* ---------------- assets ---------------- */
+const ASSET_IC={car:'<path d="M5 13l1.5-5h11L19 13M5 13h14v4H5zM7 17v2M17 17v2" stroke-linecap="round"/>',
+  excavator:'<path d="M3 20h18M5 20v-5h5v5M10 15l3-6 6 2-1 5" stroke-linecap="round" stroke-linejoin="round"/>',
+  truck:'<path d="M2 16V6h11v10M13 9h4l3 3v4M2 16h18M7 18a2 2 0 1 0 0-.1M17 18a2 2 0 1 0 0-.1"/>',
+  tracker:'<circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 0 0-8-8Z"/>'};
+const ASSET_TY={car:"Автомобил",excavator:"Багер / техника",truck:"Камион",tracker:"Тракер"};
+function ago(ts){const m=Math.round((Date.now()-ts)/60000);
+  if(m<1)return "сега";if(m<60)return m+" мин";const h=Math.round(m/60);if(h<24)return h+" ч";return Math.round(h/24)+" дни";}
+function renderAssets(){
+  const wrap=document.getElementById("assetlist");
+  document.getElementById("assetcount").textContent=state.assets.length+" обекта";
+  if(!state.assets.length){wrap.innerHTML=`<div class="empty">Няма добавени обекти. Добави техника или тракер, за да го следиш на картата.</div>`;return;}
+  wrap.innerHTML=state.assets.map(a=>{
+    const idle=(Date.now()-a.ts)>1000*60*60;
+    return `<div class="asset" data-a="${a.id}">
+      <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">${ASSET_IC[a.ty]||ASSET_IC.tracker}</svg></div>
+      <div class="info">
+        <div class="nm">${a.nm}${a.demo?' <span class="typepill">пример</span>':''}</div>
+        <div class="pl">${a.plate?a.plate+" · ":""}${a.lat.toFixed(4)}, ${a.lon.toFixed(4)} · преди ${ago(a.ts)}</div>
+      </div>
+      <div class="st ${idle?'idle':'ok'}"><i></i>${idle?'в покой':'активен'}</div>
+    </div>`;}).join("");
+  wrap.querySelectorAll(".asset").forEach(x=>x.onclick=()=>openAsset(x.dataset.a));
+}
+function openAsset(id){
+  const a=state.assets.find(x=>x.id===id);if(!a)return;
+  openSheet(`<div class="detail">
+    <h3>${a.nm}</h3>
+    <dl class="kv">
+      <dt>Тип</dt><dd>${ASSET_TY[a.ty]||a.ty}</dd>
+      ${a.plate?`<dt>Рег. / обект</dt><dd>${a.plate}</dd>`:""}
+      <dt>Координати</dt><dd>${a.lat.toFixed(5)}, ${a.lon.toFixed(5)}</dd>
+      <dt>Последен сигнал</dt><dd>преди ${ago(a.ts)}</dd>
+    </dl>
+    <div class="btnrow">
+      <button class="btn" onclick="showOnMap(${a.lon},${a.lat})">Покажи на картата</button>
+      <button class="btn ghost" onclick="editAsset('${a.id}')">Обнови локация</button>
+    </div>
+    ${a.demo?'':`<button class="btn ghost" style="flex:none;width:100%;border-color:var(--alert);color:var(--alert)" onclick="delAsset('${a.id}')">Изтрий обекта</button>`}
+  </div>`);
+}
+window.openAsset=openAsset;
+function delAsset(id){state.assets=state.assets.filter(a=>a.id!==id);lsSet(LS.assets,state.assets);
+  closeSheet();renderAssets();drawMap();updateStatus();}
+window.delAsset=delAsset;
+
+function assetForm(existing){
+  const a=existing||{};
+  openSheet(`<div class="detail">
+    <h3>${existing?"Обнови локация":"Нов обект / тракер"}</h3>
+    <div class="field"><label>Име</label><input id="f_nm" value="${a.nm||''}" placeholder="напр. Багер Hidromek"></div>
+    <div class="two">
+      <div class="field"><label>Тип</label><select id="f_ty">
+        <option value="car"${a.ty==='car'?' selected':''}>Автомобил</option>
+        <option value="excavator"${a.ty==='excavator'?' selected':''}>Багер / техника</option>
+        <option value="truck"${a.ty==='truck'?' selected':''}>Камион</option>
+        <option value="tracker"${a.ty==='tracker'?' selected':''}>Тракер</option>
+      </select></div>
+      <div class="field"><label>Рег. № / обект</label><input id="f_pl" value="${a.plate||''}" placeholder="CB0000XX"></div>
+    </div>
+    <div class="two">
+      <div class="field"><label>Шир. (lat)</label><input id="f_lat" inputmode="decimal" value="${a.lat||''}" placeholder="43.08"></div>
+      <div class="field"><label>Дълж. (lon)</label><input id="f_lon" inputmode="decimal" value="${a.lon||''}" placeholder="25.63"></div>
+    </div>
+    <button class="btn ghost" id="useGps" style="flex:none;width:100%">◉ Вземи текущата GPS позиция</button>
+    <button class="btn" id="saveAsset" style="flex:none;width:100%">Запази</button>
+  </div>`);
+  document.getElementById("useGps").onclick=()=>{geolocate((p)=>{
+    document.getElementById("f_lat").value=p.lat.toFixed(5);
+    document.getElementById("f_lon").value=p.lon.toFixed(5);});};
+  document.getElementById("saveAsset").onclick=()=>{
+    const nm=document.getElementById("f_nm").value.trim()||"Обект";
+    const lat=parseFloat(document.getElementById("f_lat").value),
+          lon=parseFloat(document.getElementById("f_lon").value);
+    if(isNaN(lat)||isNaN(lon)){alert("Въведи валидни координати.");return;}
+    if(existing){existing.nm=nm;existing.ty=document.getElementById("f_ty").value;
+      existing.plate=document.getElementById("f_pl").value.trim();existing.lat=lat;existing.lon=lon;
+      existing.ts=Date.now();existing.demo=false;}
+    else{state.assets.push({id:"a"+Date.now(),nm,ty:document.getElementById("f_ty").value,
+      plate:document.getElementById("f_pl").value.trim(),lat,lon,ts:Date.now()});}
+    lsSet(LS.assets,state.assets);closeSheet();renderAssets();drawMap();updateStatus();};
+}
+function editAsset(id){assetForm(state.assets.find(a=>a.id===id));}
+window.editAsset=editAsset;
+document.getElementById("addasset").onclick=()=>assetForm(null);
+
+/* custom camera */
+document.getElementById("addcam").onclick=()=>{
+  openSheet(`<div class="detail">
+    <h3>Собствена камера</h3>
+    <p class="note">Въведи публичен HTTP/MJPEG или JPEG адрес на камера, която <b>ти</b> притежаваш или имаш право да гледаш.</p>
+    <div class="field"><label>Име</label><input id="c_nm" placeholder="Склад — вход"></div>
+    <div class="field"><label>Град / място</label><input id="c_pl" placeholder="Русе"></div>
+    <div class="field"><label>Адрес на потока (http…jpg / mjpg)</label><input id="c_img" placeholder="http://…/snapshot.jpg"></div>
+    <div class="two">
+      <div class="field"><label>Шир. (lat)</label><input id="c_lat" inputmode="decimal" placeholder="43.84"></div>
+      <div class="field"><label>Дълж. (lon)</label><input id="c_lon" inputmode="decimal" placeholder="25.95"></div>
+    </div>
+    <button class="btn" id="c_save" style="flex:none;width:100%">Добави камерата</button>
+  </div>`);
+  document.getElementById("c_save").onclick=()=>{
+    const nm=document.getElementById("c_nm").value.trim()||"Камера";
+    const img=document.getElementById("c_img").value.trim();
+    const lat=parseFloat(document.getElementById("c_lat").value)||43.0,
+          lon=parseFloat(document.getElementById("c_lon").value)||25.0;
+    state.customCams.push({id:"cc"+Date.now(),nm,pl:document.getElementById("c_pl").value.trim()||"—",
+      ty:"city",lon,lat,prov:"собствена",page:img||"#",img});
+    lsSet(LS.cams,state.customCams);closeSheet();renderCams();drawMap();updateStatus();go("cams");};
+};
+
+/* ---------------- geolocation ---------------- */
+function geolocate(cb){
+  if(!navigator.geolocation){alert("GPS не е достъпен тук. В инсталираното приложение разреши достъп до местоположение.");return;}
+  navigator.geolocation.getCurrentPosition(
+    p=>cb({lat:p.coords.latitude,lon:p.coords.longitude}),
+    e=>{alert("Няма достъп до GPS. В инсталираното приложение разреши местоположение за ОкоМрежа.");},
+    {enableHighAccuracy:true,timeout:8000});
+}
+document.getElementById("locate").onclick=()=>geolocate(p=>{
+  state.me=p;drawMap();const[x,y]=project(p.lon,p.lat);tf.k=3.6;
+  tf.x=VB.w/2-x*tf.k;tf.y=VB.h/2-y*tf.k;clampTf();applyTf();});
+
+/* ---------------- nav ---------------- */
+const views={map:"view-map",cams:"view-cams",assets:"view-assets",set:"view-set"};
+function go(tab){
+  Object.entries(views).forEach(([k,id])=>document.getElementById(id).hidden=(k!==tab));
+  document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.nav===tab));
+  closeSheet();
+  if(tab==="cams")renderCams();
+  if(tab==="assets")renderAssets();
+}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.nav));
+
+/* ---------------- settings ---------------- */
+const themeToggle=document.getElementById("themeToggle"),refreshToggle=document.getElementById("refreshToggle");
+function applyTheme(){const t=lsGet(LS.theme,null);
+  if(t)document.documentElement.setAttribute("data-theme",t);
+  else document.documentElement.removeAttribute("data-theme");
+  const dark=t? t==="dark" : matchMedia("(prefers-color-scheme:dark)").matches;
+  themeToggle.setAttribute("aria-pressed",dark);drawMap();}
+themeToggle.onclick=()=>{const dark=themeToggle.getAttribute("aria-pressed")==="true";
+  const nt=dark?"light":"dark";lsSet(LS.theme,nt);applyTheme();};
+refreshToggle.setAttribute("aria-pressed",state.refresh);
+refreshToggle.onclick=()=>{state.refresh=!state.refresh;refreshToggle.setAttribute("aria-pressed",state.refresh);
+  lsSet(LS.refresh,state.refresh);};
+document.getElementById("wipe").onclick=()=>{
+  try{localStorage.removeItem(LS.assets);localStorage.removeItem(LS.cams);}catch(e){}
+  state.assets=[];state.customCams=[];renderAssets();renderCams();drawMap();updateStatus();closeSheet();};
+
+/* ---------------- status + refresh ---------------- */
+function updateStatus(){document.getElementById("hstat").textContent=
+  allCams().length+" кам · "+state.assets.length+" обк";}
+let refTimer=setInterval(()=>{
+  if(!state.refresh)return;
+  // bump cache on live imgs (installed app only; harmless elsewhere)
+  document.querySelectorAll(".cam img, .detail .big img").forEach(img=>{
+    const u=img.getAttribute("src");if(!u||u.startsWith("data:"))return;
+    img.setAttribute("src",u.split("#")[0]+"#t="+Date.now());});
+},20000);
+
+/* ---------------- init ---------------- */
+buildFilters();drawMap();applyTheme();updateStatus();
+go("map");
+matchMedia("(prefers-color-scheme:dark)").addEventListener("change",()=>{if(!lsGet(LS.theme,null))applyTheme();});
+</script>

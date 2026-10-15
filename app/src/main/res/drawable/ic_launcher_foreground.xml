@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Centered within the 72dp safe zone (18..90) -->
+    <group android:translateX="0" android:translateY="0">
+        <!-- eye / lens outline -->
+        <path android:strokeColor="#2DD4BF" android:strokeWidth="5"
+            android:fillColor="#00000000" android:strokeLineCap="round"
+            android:pathData="M30,54 C30,44 42,37 54,37 C66,37 78,44 78,54 C78,64 66,71 54,71 C42,71 30,64 30,54 Z"/>
+        <!-- pupil -->
+        <path android:fillColor="#2DD4BF"
+            android:pathData="M54,43 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0"/>
+        <path android:fillColor="#06211D"
+            android:pathData="M54,50 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0"/>
+    </group>
+</vector>
